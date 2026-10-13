@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.11.6](https://github.com/sympozium-ai/sympozium/compare/v0.11.5...v0.11.6) (2026-10-13)
+
+
+### Bug Fixes
+
+* **controller:** honour AgentRuntime.spec.resources on the AgentRun path ([#664](https://github.com/sympozium-ai/sympozium/issues/664)) ([1ca7b18](https://github.com/sympozium-ai/sympozium/commit/1ca7b1893a5597d5d2a7c3bfd3c9c937d525c313))
+* **controller:** let air-gapped clusters override the busybox and kubectl utility images ([#667](https://github.com/sympozium-ai/sympozium/issues/667)) ([3545078](https://github.com/sympozium-ai/sympozium/commit/3545078c45d7adeb135a337bd6612d51f74a2078))
+* **controller:** populate MCPServer tool status from tools/list ([#666](https://github.com/sympozium-ai/sympozium/issues/666)) ([c152185](https://github.com/sympozium-ai/sympozium/commit/c152185ea149cf2c96259c205cf6582895645acf))
+* **controller:** stop retrying a schedule run the API server rejects ([#665](https://github.com/sympozium-ai/sympozium/issues/665)) ([3c197ae](https://github.com/sympozium-ai/sympozium/commit/3c197ae44f5947cd09bbb16ffdb5c8668a9c43c7)), closes [#628](https://github.com/sympozium-ai/sympozium/issues/628)
+
 ## [0.11.5](https://github.com/sympozium-ai/sympozium/compare/v0.11.4...v0.11.5) (2026-10-12)
 
 
