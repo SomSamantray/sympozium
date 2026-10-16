@@ -68,14 +68,11 @@ use its local CA for production; keep the CA private key outside the cluster.
 ## 2. Create the trust anchor, role, and profile
 
 IAM Roles Anywhere exchanges a certificate chain trusted by a configured trust
-anchor for temporary role credentials. Follow AWS's [getting started
-guide](https://docs.aws.amazon.com/rolesanywhere/latest/userguide/getting-started.html)
-to create a trust anchor from your CA certificate. Record its ARN as
-`TRUST_ANCHOR_ARN`. Create a role whose trust policy is restricted to this
-anchor and the workload certificate subject, then attach a permissions policy
-for the AWS actions the Agent needs. This lab example attaches the AWS managed
-`ViewOnlyAccess` policy; it is broad, so replace it with a narrower custom
-policy for production.
+anchor for temporary role credentials. Create a role whose trust policy is
+restricted to this anchor and the workload certificate subject, then attach a
+permissions policy for the AWS actions the Agent needs. This lab example
+attaches the AWS managed `ViewOnlyAccess` policy; it is broad, so replace it
+with a narrower custom policy for production.
 
 In the AWS console, create an IAM Roles Anywhere trust anchor with your CA
 certificate as its certificate bundle and enable it. Use the resulting trust
@@ -126,6 +123,7 @@ temporary credentials:
 aws rolesanywhere create-profile \
   --name sympozium-aws-mcp \
   --role-arns arn:aws:iam::123456789012:role/sympozium-aws-mcp \
+  --enabled \
   --region us-east-1
 ```
 
