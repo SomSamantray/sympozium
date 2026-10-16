@@ -23,9 +23,12 @@ The proxy and credential helper run in the MCP server container. The AWS SDK
 uses the configured `credential_process` when it needs credentials and runs it
 again to refresh credentials as they expire. Credentials stay in the container
 and are used to sign requests; they are not passed to the Agent or model.
-The IAM role's permissions policy controls the AWS actions the session can
-perform. MCP tool filters and `toolsPrefix` only affect which tools are
-registered with the Agent; they are not an AWS authorization boundary.
+The IAM role's permissions policy is one authorization control for the AWS
+actions the session can perform. Effective permissions also depend on
+applicable session policies, permissions boundaries, service control policies
+(SCPs), and explicit denies. MCP tool filters and `toolsPrefix` only affect
+which tools are registered with the Agent; they do not enforce AWS
+authorization.
 
 ## Prerequisites
 
@@ -53,8 +56,11 @@ your deployment.
 
 Use your organization's CA to issue a client certificate for the MCP workload.
 The certificate must chain to the CA certificate you register with IAM Roles
-Anywhere. Use a distinct certificate subject for this workload so the trust
-policy can constrain it. The
+Anywhere. Give it a workload-unique Subject Alternative Name (SAN) URI, such as
+`spiffe://example.com/sympozium/aws-mcp`, and make sure the CA does not issue
+that identity to another workload. The profile's attribute mapping must include
+`x509SAN/URI` for the trust policy condition to work; AWS maps SAN URI values by
+default. The
 [reference implementation's provisioning notebook](https://github.com/Radkowski/sympozium-aws-mcp-roles-anywhere/blob/main/provisioning/iam-roles-anywhere-lab.ipynb)
 demonstrates a disposable EasyRSA CA and client certificate for a lab. Do not
 use its local CA for production; keep the CA private key outside the cluster.
@@ -78,8 +84,8 @@ where you will create the profile and request credentials.
 
 The role trust policy must trust the IAM Roles Anywhere service principal and
 should scope assumptions to the expected trust anchor and certificate
-identity. For example, adapt the condition values to your CA and certificate
-subject:
+identity. For example, adapt the condition values to your CA and the unique
+SAN URI in your certificate:
 
 ```json
 {
@@ -93,7 +99,7 @@ subject:
         "aws:SourceArn": "TRUST_ANCHOR_ARN"
       },
       "StringEquals": {
-        "aws:PrincipalTag/x509Subject/CN": "sympozium-aws-mcp"
+        "aws:PrincipalTag/x509SAN/URI": "spiffe://example.com/sympozium/aws-mcp"
       }
     }
   }]
@@ -155,9 +161,12 @@ kubectl create secret generic aws-mcp-certificate \
 ```
 
 Kubernetes mounts Secret volumes read-only in the pod specification below.
-Restrict who can read Secrets in `sympozium-system`, and rotate the
-certificate before it expires. Replacing the certificate Secret does not
-reissue the certificate; follow your CA's issuance and rotation process.
+Enable encryption at rest for Kubernetes Secrets or use an external secret
+provider, and tightly restrict RBAC access to the Secret in
+`sympozium-system`. The example sets the projected files to mode `0400`; ensure
+the helper process runs as a UID that can read them. Rotate the certificate
+before it expires. Replacing the certificate Secret does not reissue the
+certificate; follow your CA's issuance and rotation process.
 
 ## 5. Configure the AWS profile and MCPServer
 
@@ -207,6 +216,7 @@ spec:
       - name: aws-certificate
         secret:
           secretName: aws-mcp-certificate
+          defaultMode: 0400
     volumeMounts:
       - name: aws-config
         mountPath: /config
@@ -256,9 +266,10 @@ spec:
 ```
 
 Apply the Agent and test a read-only operation against a non-sensitive
-resource. Confirm the IAM role denies an action outside its policy. A tool
-allowlist can reduce which tools the Agent sees, but AWS IAM permissions remain
-the enforcement boundary for every signed request.
+resource. Confirm the IAM role denies an action outside its effective
+permissions. A tool allowlist can reduce which tools the Agent sees, but AWS
+IAM policies and applicable organization controls determine the permissions
+for every signed request.
 
 ## Troubleshooting
 

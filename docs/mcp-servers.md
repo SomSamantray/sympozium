@@ -302,6 +302,8 @@ Shows:
 | `secretRefs` | []SecretRef | No | - | Kubernetes Secrets to mount as env vars |
 | `resources` | ResourceRequirements | No | - | CPU/memory requests and limits |
 | `serviceAccountName` | string | No | - | ServiceAccount for RBAC |
+| `volumes` | []Volume | No | - | Additional pod volumes, such as ConfigMaps or Secrets (`adapter-bin` is reserved for stdio servers) |
+| `volumeMounts` | []VolumeMount | No | - | Mount declared volumes into the MCP server container |
 
 ### SecretRef
 
@@ -864,11 +866,15 @@ spec:
 For AWS API access without long-lived access keys. The MCP container uses an
 X.509 certificate and [IAM Roles Anywhere](https://docs.aws.amazon.com/rolesanywhere/latest/userguide/introduction.html)
 to obtain temporary credentials, then signs requests to the AWS MCP endpoint
-with SigV4. The IAM role's permissions policy is the authorization boundary;
-tool prefixes and MCP tool filters do not grant or restrict AWS permissions.
+with SigV4. The IAM role's permissions policy is an authorization control;
+effective permissions also depend on applicable session policies, permissions
+boundaries, service control policies (SCPs), and explicit denies. Tool prefixes
+and MCP tool filters do not enforce AWS authorization.
 
-The certificate's private key is mounted as a read-only Secret volume. It is
-not injected through `secretRefs`, because those Secret values become container
+The certificate's private key is mounted as a read-only Secret volume with
+restrictive file permissions. Enable Kubernetes Secret encryption at rest or
+use an external secret provider, and tightly limit Secret RBAC. It is not
+injected through `secretRefs`, because those Secret values become container
 environment variables. See the [AWS MCP Roles Anywhere guide](guides/aws-mcp-roles-anywhere.md)
 for AWS provisioning, image, and deployment steps.
 
@@ -898,6 +904,7 @@ spec:
       - name: aws-certificate
         secret:
           secretName: aws-mcp-certificate
+          defaultMode: 0400
     volumeMounts:
       - name: aws-config
         mountPath: /config
